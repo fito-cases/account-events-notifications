@@ -119,4 +119,101 @@ class AccountEventsTest {
         assertEquals(1, sms.messages().size());
         assertEquals(1, whatsApp.messages().size());
     }
+
+    @Test void testOverdraftBoundaryForEveryWithdrawalOrigin() {
+        for (int origin = 0; origin < 4; origin++) {
+            CurrentAccount a = account(100, 1_000);
+            List<AccountEvent> owner = new ArrayList<>();
+            a.subscribe(AccountEventType.OVERDRAFT, owner::add);
+            LongPredicate withdraw = switch (origin) {
+                case 0 -> a::cashWithdrawal;
+                case 1 -> a::payment;
+                case 2 -> a::outgoingTransfer;
+                default -> a::outgoingPix;
+            };
+            assertTrue(withdraw.test(100)); // exactly zero is not negative
+            assertTrue(owner.isEmpty(), "zero balance origin " + origin);
+            assertTrue(withdraw.test(1)); // from zero (nonnegative) to negative
+            assertEquals(1, owner.size(), "overdraft origin " + origin);
+            assertEquals(-1, owner.getFirst().resultingBalanceCents());
+            assertTrue(withdraw.test(999)); // stays negative, reaches the inclusive limit
+            assertFalse(withdraw.test(1)); // beyond the limit
+            assertEquals(1, owner.size());
+            assertEquals(-1_000, a.balanceCents());
+            assertTrue(a.deposit(1_000)); // back to exactly zero
+            assertTrue(withdraw.test(1)); // a new crossing alerts again
+            assertEquals(2, owner.size());
+        }
+    }
+
+    @Test void testInvestmentCrossingJumpsAndRecrossing() {
+        CurrentAccount a = account(0, 0);
+        List<AccountEvent> investment = new ArrayList<>();
+        a.subscribe(AccountEventType.INVESTMENT_CROSSING, investment::add);
+        assertTrue(a.deposit(6_000_000)); // one transaction jumping past the threshold
+        assertEquals(1, investment.size());
+        assertEquals(6_000_000, investment.getFirst().resultingBalanceCents());
+        assertTrue(a.incomingPix(1)); // already at or above: no crossing
+        assertEquals(1, investment.size());
+        assertTrue(a.payment(1_000_002)); // falls just below R$50,000 (4_999_999)
+        assertTrue(a.incomingTransfer(1)); // crosses again at exactly R$50,000
+        assertEquals(2, investment.size());
+        assertEquals(5_000_000, investment.get(1).resultingBalanceCents());
+
+        CurrentAccount negative = account(0, 1_000_000);
+        List<AccountEvent> fromNegative = new ArrayList<>();
+        negative.subscribe(AccountEventType.INVESTMENT_CROSSING, fromNegative::add);
+        assertTrue(negative.outgoingPix(1_000_000));
+        assertTrue(negative.deposit(5_999_999)); // -R$10,000 to R$49,999.99
+        assertTrue(fromNegative.isEmpty());
+        assertTrue(negative.deposit(1));
+        assertEquals(1, fromNegative.size());
+    }
+
+    @Test void testMessagesAndCompletedBalancesAcrossRecipients() {
+        CurrentAccount a = account(1_000_000, 2_000_000);
+        SmsDelivery ownerSms = new SmsDelivery(), managerSms = new SmsDelivery();
+        WhatsAppDelivery securityWhatsApp = new WhatsAppDelivery(), investmentWhatsApp = new WhatsAppDelivery();
+        AccountNotificationRouting.attach(a, new AccountEventRecipient(ownerSms),
+                new AccountEventRecipient(managerSms), new AccountEventRecipient(securityWhatsApp),
+                new AccountEventRecipient(investmentWhatsApp));
+        List<String> observed = new ArrayList<>();
+        for (AccountEventType type : AccountEventType.values())
+            a.subscribe(type, event -> observed.add(event.type() + "=" + a.balanceCents()
+                    + "/" + event.resultingBalanceCents()));
+
+        assertTrue(a.outgoingTransfer(1_500_000)); // R$15,000: overdraft and digital security
+        assertTrue(a.deposit(1_000_000)); // R$5,000.00, no qualifying event
+        assertTrue(a.cashWithdrawal(700_000)); // R$7,000: overdraft and account manager
+        assertTrue(a.incomingPix(5_200_000)); // R$50,000.00 reached
+        assertEquals(List.of("OVERDRAFT=-500000/-500000", "SECURITY_WITHDRAWAL=-500000/-500000",
+                "OVERDRAFT=-200000/-200000", "MANAGER_WITHDRAWAL=-200000/-200000",
+                "INVESTMENT_CROSSING=5000000/5000000"), observed);
+
+        assertEquals(List.of(
+                "SMS | Event: OVERDRAFT; Customer: Ana Silva; CPF: 123.456.789-00; Branch: 1234; "
+                        + "Account: 98765-0; Resulting balance: R$ -5000.00",
+                "SMS | Event: OVERDRAFT; Customer: Ana Silva; CPF: 123.456.789-00; Branch: 1234; "
+                        + "Account: 98765-0; Resulting balance: R$ -2000.00"), ownerSms.messages());
+        assertEquals(List.of("SMS | Event: MANAGER_WITHDRAWAL; Customer: Ana Silva; CPF: 123.456.789-00; "
+                + "Branch: 1234; Account: 98765-0; Resulting balance: R$ -2000.00"), managerSms.messages());
+        assertEquals(List.of("WhatsApp | Event: SECURITY_WITHDRAWAL; Customer: Ana Silva; CPF: 123.456.789-00; "
+                + "Branch: 1234; Account: 98765-0; Resulting balance: R$ -5000.00"), securityWhatsApp.messages());
+        assertEquals(List.of("WhatsApp | Event: INVESTMENT_CROSSING; Customer: Ana Silva; CPF: 123.456.789-00; "
+                + "Branch: 1234; Account: 98765-0; Resulting balance: R$ 50000.00"), investmentWhatsApp.messages());
+    }
+
+    @Test void testRejectedQualifyingTransactionsNotifyNobody() {
+        CurrentAccount a = account(1_000_000, 0);
+        List<AccountEvent> received = new ArrayList<>();
+        for (AccountEventType type : AccountEventType.values()) a.subscribe(type, received::add);
+        assertFalse(a.cashWithdrawal(1_000_001)); // would be overdraft and digital security
+        assertFalse(a.payment(1_500_000));
+        assertEquals(1_000_000, a.balanceCents());
+        assertThrows(IllegalArgumentException.class, () -> a.deposit(-5_000_000));
+        assertTrue(received.isEmpty());
+        assertTrue(a.cashWithdrawal(1_000_000)); // to exactly zero: digital security only
+        assertEquals(List.of(AccountEventType.SECURITY_WITHDRAWAL), received.stream().map(AccountEvent::type).toList());
+        assertEquals(0, received.getFirst().resultingBalanceCents());
+    }
 }
