@@ -8,10 +8,6 @@ import java.util.Objects;
 
 /** Monetary values are integer cents; the negative-limit magnitude is an inclusive bound. */
 public final class CurrentAccount {
-    private static final long MANAGER_THRESHOLD = 500_000;
-    private static final long SECURITY_THRESHOLD = 1_000_000;
-    private static final long INVESTMENT_THRESHOLD = 5_000_000;
-
     private final Customer customer;
     private final String branch;
     private final String accountNumber;
@@ -57,11 +53,8 @@ public final class CurrentAccount {
         try { next = Math.subtractExact(balanceCents, cents); }
         catch (ArithmeticException overflow) { return false; }
         if (next < -negativeLimitCents) return false;
-        long previous = balanceCents;
         balanceCents = next;
-        if (previous >= 0 && next < 0) publish(AccountEventType.OVERDRAFT);
-        if (cents >= SECURITY_THRESHOLD) publish(AccountEventType.SECURITY_WITHDRAWAL);
-        else if (cents >= MANAGER_THRESHOLD) publish(AccountEventType.MANAGER_WITHDRAWAL);
+        afterSuccessfulTransaction();
         return true;
     }
 
@@ -70,10 +63,8 @@ public final class CurrentAccount {
         long next;
         try { next = Math.addExact(balanceCents, cents); }
         catch (ArithmeticException overflow) { return false; }
-        long previous = balanceCents;
         balanceCents = next;
-        if (previous < INVESTMENT_THRESHOLD && next >= INVESTMENT_THRESHOLD)
-            publish(AccountEventType.INVESTMENT_CROSSING);
+        afterSuccessfulTransaction();
         return true;
     }
 
@@ -81,9 +72,7 @@ public final class CurrentAccount {
         if (cents <= 0) throw new IllegalArgumentException("Amount must be positive cents");
     }
 
-    private void publish(AccountEventType type) {
-        AccountEvent event = new AccountEvent(type, customer, branch, accountNumber, balanceCents);
-        for (AccountEventListener listener : List.copyOf(subscribers.getOrDefault(type, List.of())))
-            listener.onAccountEvent(event);
+    private void afterSuccessfulTransaction() {
+        // Extension point: starter does not yet publish account events.
     }
 }
