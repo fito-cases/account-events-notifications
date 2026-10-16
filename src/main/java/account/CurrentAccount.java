@@ -8,6 +8,10 @@ import java.util.Objects;
 
 /** Monetary values are integer cents; the negative-limit magnitude is an inclusive bound. */
 public final class CurrentAccount {
+    private static final long MANAGER_WITHDRAWAL_CENTS = 500_000;        // R$5,000.00
+    private static final long SECURITY_WITHDRAWAL_CENTS = 1_000_000;     // R$10,000.00
+    private static final long INVESTMENT_BALANCE_CENTS = 5_000_000;      // R$50,000.00
+
     private final Customer customer;
     private final String branch;
     private final String accountNumber;
@@ -53,8 +57,11 @@ public final class CurrentAccount {
         try { next = Math.subtractExact(balanceCents, cents); }
         catch (ArithmeticException overflow) { return false; }
         if (next < -negativeLimitCents) return false;
+        long previous = balanceCents;
         balanceCents = next;
-        afterSuccessfulTransaction();
+        if (previous >= 0 && next < 0) publish(AccountEventType.OVERDRAFT);
+        if (cents >= SECURITY_WITHDRAWAL_CENTS) publish(AccountEventType.SECURITY_WITHDRAWAL);
+        else if (cents >= MANAGER_WITHDRAWAL_CENTS) publish(AccountEventType.MANAGER_WITHDRAWAL);
         return true;
     }
 
@@ -63,8 +70,10 @@ public final class CurrentAccount {
         long next;
         try { next = Math.addExact(balanceCents, cents); }
         catch (ArithmeticException overflow) { return false; }
+        long previous = balanceCents;
         balanceCents = next;
-        afterSuccessfulTransaction();
+        if (previous < INVESTMENT_BALANCE_CENTS && next >= INVESTMENT_BALANCE_CENTS)
+            publish(AccountEventType.INVESTMENT_CROSSING);
         return true;
     }
 
@@ -72,7 +81,11 @@ public final class CurrentAccount {
         if (cents <= 0) throw new IllegalArgumentException("Amount must be positive cents");
     }
 
-    private void afterSuccessfulTransaction() {
-        // Extension point: starter does not yet publish account events.
+    /** Called only after the balance is updated, so listeners observe the completed transaction. */
+    private void publish(AccountEventType type) {
+        List<AccountEventListener> listeners = subscribers.get(type);
+        if (listeners == null || listeners.isEmpty()) return;
+        AccountEvent event = new AccountEvent(type, customer, branch, accountNumber, balanceCents);
+        for (AccountEventListener listener : List.copyOf(listeners)) listener.onAccountEvent(event);
     }
 }
