@@ -1,1 +1,49 @@
-artifacts: []
+artifacts:
+  - path: pom.xml
+    role: scaffold
+    description: Java 21 and Maven test/package configuration.
+  - path: .gitignore
+    role: scaffold
+    description: Local build and editor output exclusions.
+  - path: src/main/java/account/CurrentAccount.java
+    role: target
+    description: Account transactions, balances, and activity notifications.
+  - path: src/main/java/account/Customer.java
+    role: reference
+    description: Customer identity data for account activity.
+  - path: src/main/java/account/AccountEvent.java
+    role: reference
+    description: Account-event context.
+  - path: src/main/java/account/AccountEventType.java
+    role: reference
+    description: Account-event categories.
+  - path: src/main/java/account/AccountEventListener.java
+    role: reference
+    description: Account-event recipient contract.
+  - path: src/main/java/account/AccountEventRecipient.java
+    role: reference
+    description: Recipient-facing notification integration.
+  - path: src/main/java/account/AccountNotificationRouting.java
+    role: reference
+    description: Recipient roles for account activity.
+  - path: src/main/java/account/MessageDelivery.java
+    role: reference
+    description: Notification delivery contract.
+  - path: src/main/java/account/AccountEventMessage.java
+    role: reference
+    description: Notification text for account events.
+  - path: src/main/java/account/SmsDelivery.java
+    role: reference
+    description: Local SMS message capture.
+  - path: src/main/java/account/WhatsAppDelivery.java
+    role: reference
+    description: Local WhatsApp message capture.
+  - path: src/test/java/account/CurrentAccountBaselineTest.java
+    role: evidence
+    description: Account transaction and rejection checks.
+  - path: src/test/java/account/AccountEventsTest.java
+    role: evidence
+    description: Account-event boundary and message checks.
+  - path: src/test/java/account/BuildSmokeTest.java
+    role: scaffold
+    description: JUnit discovery check.

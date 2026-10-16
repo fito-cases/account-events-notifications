@@ -1,5 +1,4 @@
-# Planned observable baseline; verify and replace with actual checks after source work.
 failing_tests:
-  - Account-event recipient and threshold boundary tests fail for the incomplete starter behavior.
-  - Notification content and completed-balance tests fail for the incomplete starter behavior.
+  - 'account.AccountEventsTest.testRecipientThresholdBoundaries: Expected registered account-event notification (expected 1, was 0)'
+  - 'account.AccountEventsTest.testNotificationContentAndCompletedBalance: Expected completed-balance notification (expected 1, was 0)'
 build_status: failing
