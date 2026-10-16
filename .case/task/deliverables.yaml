@@ -1,0 +1,5 @@
+deliverables:
+  - type: code_change
+    description: Account activity behavior supporting the specified recipients and notification channels while preserving the negative-limit rule.
+  - type: test_written
+    description: Tests of transaction success and rejection, event thresholds and recipients, notification content, and completed balances at notification time.

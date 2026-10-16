@@ -1,0 +1,4 @@
+- Use English for class and method names.
+- Preserve the account's negative-limit rule; only successful transactions produce events.
+- Respect the stated currency boundaries without rounding errors.
+- The account must not send messages or depend on concrete SMS or WhatsApp sender classes.

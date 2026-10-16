@@ -1,0 +1,106 @@
+criteria:
+  - id: observer-collaboration
+    title: Account-event Observer collaboration
+    knowledge_component: concept:design-patterns.observer
+    bloom_level: APPLICATION
+    weight: 25
+    levels:
+      - score: 0
+        label: not_achieved
+        description: Account changes have no functioning registration-and-notification collaboration; intended recipients cannot subscribe to events.
+      - score: 1
+        label: partial
+        description: An account change reaches a fixed dependent, but registered recipients cannot all receive the relevant event or registration is incomplete.
+      - score: 2
+        label: achieved
+        description: Recipients can register for relevant account events and multiple registered recipients are notified when those events occur.
+      - score: 3
+        label: exemplary
+        description: Registration and one-to-many delivery work across account events, and recipient combinations can change without altering account behavior.
+    evaluation_method:
+      type: ai
+      prompt_hint: Inspect the account and recipient contracts and tests for registration, multiple recipients, and event delivery; judge functioning behavior, not naming alone.
+  - id: sender-independence
+    title: No concrete sender dependency in the account
+    knowledge_component: execution-fact:design-patterns.an-observer-publisher-calls-the-subscriber-interface-without-depending-on-concrete-subscriber-classes
+    bloom_level: APPLICATION
+    weight: 20
+    levels:
+      - score: 0
+        label: not_achieved
+        description: The account sends messages directly or dispatches to concrete message sender classes instead of publishing to recipients.
+      - score: 1
+        label: partial
+        description: A common notification contract exists for some paths, but an account path still constructs or calls a concrete sender or channel.
+      - score: 2
+        label: achieved
+        description: The account publishes through an abstraction without concrete sender dependencies; separate SMS and WhatsApp implementations handle message delivery.
+      - score: 3
+        label: exemplary
+        description: Both SMS and WhatsApp implementations coexist through the abstraction, and no sender-specific branch or dependency appears in the account across event paths.
+    evaluation_method:
+      type: ai
+      prompt_hint: Inspect account imports, fields, constructors, event paths and channel implementations; verify no concrete SMS or WhatsApp dependency in the account.
+  - id: event-recipients
+    title: Event thresholds and recipients
+    knowledge_component: execution-fact:design-patterns.an-observer-publisher-notifies-registered-subscribers-when-their-event-occurs
+    bloom_level: APPLICATION
+    weight: 25
+    levels:
+      - score: 0
+        label: not_achieved
+        description: Qualifying account events do not reliably reach their intended recipients.
+      - score: 1
+        label: partial
+        description: Some qualifying events reach recipients, but a transaction type, threshold boundary, recipient, or nonqualifying event is handled incorrectly.
+      - score: 2
+        label: achieved
+        description: Successful transactions alert the intended recipients at the specified overdraft, withdrawal and incoming-balance boundaries, while nonqualifying or rejected transactions do not alert them.
+      - score: 3
+        label: exemplary
+        description: All specified event and transaction types behave as achieved, with tests at exact boundaries, on both sides of each boundary, and for absent spurious alerts.
+    evaluation_method:
+      type: ai
+      prompt_hint: Compare tests and behavior for nonnegative-to-negative overdraft, per-transaction withdrawals at R$5,000 and R$10,000, incoming balance crossing R$50,000, all named transaction origins and rejection paths.
+  - id: notification-context
+    title: Context available to recipients
+    knowledge_component: execution-fact:design-patterns.an-observer-update-can-expose-event-context-or-its-publisher-to-subscribers-that-need-it
+    bloom_level: APPLICATION
+    weight: 20
+    levels:
+      - score: 0
+        label: not_achieved
+        description: Recipients cannot produce a notification identifying the event and account.
+      - score: 1
+        label: partial
+        description: Recipients receive event data, but at least one required message field is missing or incorrect.
+      - score: 2
+        label: achieved
+        description: Recipients can produce notifications with event name, customer name and CPF, branch and account numbers, and resulting balance.
+      - score: 3
+        label: exemplary
+        description: All required fields appear correctly across different event types and recipients, with tests checking the rendered messages and resulting balances.
+    evaluation_method:
+      type: ai
+      prompt_hint: Inspect event context, produced messages and assertions for event name, customer name, CPF, branch, account number and resulting balance across recipients.
+  - id: completed-state
+    title: Completed state at notification time
+    knowledge_component: execution-fact:design-patterns.an-observer-publisher-completes-its-state-change-before-notifying-subscribers
+    bloom_level: APPLICATION
+    weight: 10
+    levels:
+      - score: 0
+        label: not_achieved
+        description: A recipient can observe a pre-transaction or inconsistent balance for an announced event.
+      - score: 1
+        label: partial
+        description: Some event paths expose the resulting balance, but another path exposes stale or incomplete state or emits an event for a rejected transaction.
+      - score: 2
+        label: achieved
+        description: Every emitted event exposes the completed valid transaction state, and rejected transactions produce no event.
+      - score: 3
+        label: exemplary
+        description: Tests verify final balances at notification time across event paths and verify that rejected transactions leave recipients unnotified.
+    evaluation_method:
+      type: ai
+      prompt_hint: Check ordering of successful state changes and event publication, and tests for the balance observed by recipients and the absence of events on rejected transactions.

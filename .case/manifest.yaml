@@ -1,0 +1,14 @@
+title: Account Events Without Notification Coupling
+type: implementation
+version: "1.0.0"
+status: draft
+estimated_duration_minutes: 90
+language: en
+tags: [observer, design-patterns, banking, notifications]
+authors:
+  - name: Paulo Sérgio
+    email: pasemes@gmail.com
+submission:
+  method: pull_request
+  target_branch: v1.0.0
+  student_branch: solution

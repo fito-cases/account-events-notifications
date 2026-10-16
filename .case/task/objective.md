@@ -1,0 +1,1 @@
+Implement account-event notifications so successful account activity reaches the correct recipients at the specified boundaries, with independent SMS and WhatsApp delivery and no concrete sender dependency in `CurrentAccount`.

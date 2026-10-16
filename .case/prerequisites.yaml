@@ -1,0 +1,5 @@
+prerequisites:
+  - knowledge_component: concept:design-patterns.design-pattern
+    bloom_level: COMPREHENSION
+    description: "Understand that a design pattern describes adaptable roles and collaborations, not source code to copy."
+    mandatory: true

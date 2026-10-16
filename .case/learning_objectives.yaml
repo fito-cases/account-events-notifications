@@ -1,0 +1,21 @@
+learning_objectives:
+  - knowledge_component: concept:design-patterns.observer
+    bloom_level: APPLICATION
+    description: "Design and implement a one-to-many collaboration for account-event notifications."
+    weight: primary
+  - knowledge_component: execution-fact:design-patterns.an-observer-publisher-calls-the-subscriber-interface-without-depending-on-concrete-subscriber-classes
+    bloom_level: APPLICATION
+    description: "Keep account-event publication independent of concrete notification senders and message channels."
+    weight: primary
+  - knowledge_component: execution-fact:design-patterns.an-observer-publisher-notifies-registered-subscribers-when-their-event-occurs
+    bloom_level: APPLICATION
+    description: "Deliver each qualifying account event to its intended registered recipients."
+    weight: primary
+  - knowledge_component: execution-fact:design-patterns.an-observer-update-can-expose-event-context-or-its-publisher-to-subscribers-that-need-it
+    bloom_level: APPLICATION
+    description: "Give recipients enough account-event context to produce the required messages."
+    weight: secondary
+  - knowledge_component: execution-fact:design-patterns.an-observer-publisher-completes-its-state-change-before-notifying-subscribers
+    bloom_level: APPLICATION
+    description: "Ensure account-event recipients see the completed transaction state."
+    weight: secondary
