@@ -1,0 +1,5 @@
+package account;
+
+public enum AccountEventType {
+    OVERDRAFT, MANAGER_WITHDRAWAL, SECURITY_WITHDRAWAL, INVESTMENT_CROSSING
+}
